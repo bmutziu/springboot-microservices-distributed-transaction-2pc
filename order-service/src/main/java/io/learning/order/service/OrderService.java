@@ -40,26 +40,35 @@ public class OrderService {
 
     @Autowired
     private ApplicationEventPublisher eventPublisher;
-    
+
     public Optional<Order> getOrderById(Long orderId) {
         return orderRepository.findById(orderId);
     }
 
     @Transactional
     public Order createOrder(Order order) {
-        DistributedTransaction transaction = restTemplate.postForObject("http://transaction-server/transactions", new DistributedTransaction(), DistributedTransaction.class);
-        log.info("Trasaction created: {}", transaction);
+        DistributedTransaction transaction = restTemplate.postForObject("http://transaction-server/transactions",
+                new DistributedTransaction(), DistributedTransaction.class);
+        if (transaction == null) {
+            throw new RuntimeException("Transaction server is down");
+        }
+        log.info("Transaction created: {}", transaction);
         Order savedOrder = orderRepository.save(order);
         Product product = updateProduct(transaction.getId(), savedOrder);
         log.info("Product updated: {}", product);
         int totalAmount = product.getPrice() * order.getQuantity();
-        Account account = restTemplate.getForObject("http://account-service/accounts/customer/{customerId}", Account.class, order.getCustomerId());
+        Account account = restTemplate.getForObject("http://account-service/accounts/customer/{customerId}",
+                Account.class, order.getCustomerId());
+        if (account == null) {
+            throw new RuntimeException("Account service is down");
+        }
         log.info("Account :{}", account);
         if (account.getBalance() >= totalAmount) {
             log.info("Withdrawing money: {}", totalAmount);
             withdraw(transaction.getId(), account.getId(), totalAmount);
         } else {
-            throw new InSufficientFundException("Insufficient funds. Balance: " + account.getBalance() + ", orderAmount:  " + totalAmount);
+            throw new InSufficientFundException(
+                    "Insufficient funds. Balance: " + account.getBalance() + ", orderAmount:  " + totalAmount);
         }
         eventPublisher.publishEvent(new OrderTransactionEvent(transaction.getId()));
         int number = random.nextInt();
@@ -84,12 +93,16 @@ public class OrderService {
     protected Account withdraw(String transactionId, Long accountId, int amount) {
         addTransactionParticipant(transactionId, "account-service", DistributedTransactionStatus.NEW);
         HttpEntity<Void> requestEntity = new HttpEntity<>(prepareHeaders(transactionId));
-        return restTemplate.exchange("http://account-service/accounts/{id}/withdrawl/{amount}", HttpMethod.PUT, requestEntity, Account.class, accountId, amount).getBody();
+        return restTemplate.exchange("http://account-service/accounts/{id}/withdrawl/{amount}", HttpMethod.PUT,
+                requestEntity, Account.class, accountId, amount).getBody();
     }
-    
-    protected void addTransactionParticipant(String transactionId, String serviceId, DistributedTransactionStatus status) {
-        HttpEntity<DistributedTransactionParticipant> requestEntity = new HttpEntity<>(new DistributedTransactionParticipant(serviceId, status));
-        restTemplate.exchange("http://transaction-server/transactions/{id}/participants", HttpMethod.PUT, requestEntity, Object.class, transactionId);
+
+    protected void addTransactionParticipant(String transactionId, String serviceId,
+            DistributedTransactionStatus status) {
+        HttpEntity<DistributedTransactionParticipant> requestEntity = new HttpEntity<>(
+                new DistributedTransactionParticipant(serviceId, status));
+        restTemplate.exchange("http://transaction-server/transactions/{id}/participants", HttpMethod.PUT, requestEntity,
+                Object.class, transactionId);
     }
 
     private HttpHeaders prepareHeaders(String transactionId) {

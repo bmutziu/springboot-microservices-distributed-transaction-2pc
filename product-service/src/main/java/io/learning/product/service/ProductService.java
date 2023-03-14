@@ -41,10 +41,13 @@ public class ProductService {
         log.info("Updating product quantity with id: {}, quantity: {}", productId, quantity);
         findById(productId).ifPresent(prod -> {
             if (prod.getQuantity() < quantity) {
-                throw new ProductProcessingException("Insufficient product quantity. Available: " + prod.getQuantity() + ", Demand: " + quantity);
+                throw new ProductProcessingException(
+                        "Insufficient product quantity. Available: " + prod.getQuantity() + ", Demand: " + quantity);
             }
             prod.setQuantity(prod.getQuantity() - quantity);
+            log.info("Updated product: {} for transaction: {}", prod, transactionId);
             eventPublisher.publishEvent(new ProductTransactionEvent(transactionId, prod));
+            log.info("Published event for transaction: {}", transactionId);
             productRepository.save(ProductMapper.map(prod));
         });
     }

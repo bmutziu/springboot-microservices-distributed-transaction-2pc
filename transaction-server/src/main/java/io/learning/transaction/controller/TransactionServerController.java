@@ -74,18 +74,20 @@ public class TransactionServerController {
 
     @PutMapping("/{id}/participants")
     @Operation(summary = "Add participant in a transaction")
-    public void addParticipant(@PathVariable("id") String id, @RequestBody DistributedTransactionParticipant participant) {
+    public void addParticipant(@PathVariable("id") String id,
+            @RequestBody DistributedTransactionParticipant participant) {
         log.info("Adding participant in transaction: {}, participant: {}", id, participant);
         repository.findById(id).ifPresent(txn -> {
             txn.getParticipants().add(participant);
             repository.update(txn);
-            log.info("All participant: {}", txn.getParticipants());
+            log.info("All participants: {}", txn.getParticipants());
         });
     }
 
     @PutMapping("/{id}/participants/{serviceId}/status/{status}")
     @Operation(summary = "Update participant status in a transaction")
-    public void updateParticipant(@PathVariable("id") String id, @PathVariable("serviceId") String serviceId, @PathVariable("status") DistributedTransactionStatus status) {
+    public void updateParticipant(@PathVariable("id") String id, @PathVariable("serviceId") String serviceId,
+            @PathVariable("status") DistributedTransactionStatus status) {
         log.info("Updating participant id: {}, serviceId: {}, status: {}", id, serviceId, status);
         repository.findById(id).ifPresent(txn -> {
             List<DistributedTransactionParticipant> participants = txn.getParticipants().stream().map(p -> {

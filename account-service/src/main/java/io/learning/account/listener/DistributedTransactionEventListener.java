@@ -20,10 +20,10 @@ public class DistributedTransactionEventListener {
     private EventBus eventBus;
 
     @RabbitListener(bindings = {
-            @QueueBinding(value = @Queue("txn-events-account"), exchange = @Exchange(type = ExchangeTypes.TOPIC, name = "txn-events"))
+            @QueueBinding(key = "txn-events", value = @Queue("txn-events-account"), exchange = @Exchange(type = ExchangeTypes.TOPIC, name = "txn-events"))
     })
     public void onMessage(DistributedTransaction transaction) {
-        debug.info("Transaction message received: {}", transaction);
+        log.debug("Transaction message received: {}", transaction);
         eventBus.sendTransaction(transaction);
     }
 

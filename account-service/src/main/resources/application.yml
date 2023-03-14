@@ -6,7 +6,7 @@ spring:
     username: root
     password: root
   jpa:
-    database-platform: org.hibernate.dialect.MySQLDialect
+    database-platform: org.hibernate.dialect.MySQL8Dialect
     hibernate.ddl-auto: update
   rabbitmq:
     host: localhost
@@ -31,5 +31,6 @@ logging:
   level:
     org.springframework.data: ERROR
     com.netflix: ERROR
+    io.learning.account.listener: DEBUG
   pattern:
     console: '%d{yyyy-MM-dd HH:mm:ss:SSS} [S=${APP_NAME:-}] [T=%X{traceId}] %-5level %logger{36}.%L %msg%n'

@@ -34,8 +34,11 @@ public class ProductTransactionListener implements TransactionListener<ProductTr
 
         DistributedTransaction transaction = null;
         int count = 3000;
+        log.info("Waiting for receiving transaction.");
         while (count > 0) {
             transaction = eventBus.receiveTransaction(event.getTransactionId());
+            // log.debug("Transaction received: {} for event: {}", transaction,
+            // event.getTransactionId());
             if (transaction == null) {
                 try {
                     TimeUnit.MILLISECONDS.sleep(10);
@@ -48,8 +51,9 @@ public class ProductTransactionListener implements TransactionListener<ProductTr
             }
         }
         if (transaction == null || transaction.getStatus() != DistributedTransactionStatus.CONFIRMED) {
-            log.info("Transction received after waiting: {}", transaction);
-            throw new ProductProcessingException("Distributed transaction wasn't confirmed for txnId: " + event.getTransactionId());
+            log.info("Transaction received after waiting: {}", transaction);
+            throw new ProductProcessingException(
+                    "Distributed transaction wasn't confirmed for txnId: " + event.getTransactionId());
         }
     }
 

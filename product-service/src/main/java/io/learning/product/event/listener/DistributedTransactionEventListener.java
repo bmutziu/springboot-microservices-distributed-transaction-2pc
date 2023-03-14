@@ -19,8 +19,8 @@ public class DistributedTransactionEventListener {
     @Autowired
     private EventBus eventBus;
 
-    @RabbitListener(bindings = { 
-                @QueueBinding(value = @Queue("txn-events-product"), exchange = @Exchange(type = ExchangeTypes.TOPIC, name = "txn-events")) 
+    @RabbitListener(bindings = {
+            @QueueBinding(key = "txn-events", value = @Queue("txn-events-product"), exchange = @Exchange(type = ExchangeTypes.TOPIC, name = "txn-events"))
     })
     public void onMessage(DistributedTransaction transaction) {
         log.debug("Transaction message received: {}", transaction);
